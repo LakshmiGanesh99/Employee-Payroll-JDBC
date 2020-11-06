@@ -1,15 +1,16 @@
 package com.capg.emppayrollservices;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.sql.Statement;
-import java.util.List;
-import java.sql.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
 
 public class EmployeePayrollServiceDB {
 	EmployeePayrollData empDataObj = null;
@@ -29,12 +30,12 @@ public class EmployeePayrollServiceDB {
 				double salary = resultSet.getDouble(4);
 				LocalDate start = resultSet.getDate(5).toLocalDate();
 				empDataObj = new EmployeePayrollData(id, name, gender ,salary,start);
-				employeePayrollList.add(empDataObj);	
-				
+				employeePayrollList.add(empDataObj);
 			}
 		} catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
+		System.out.println(employeePayrollList);
 		return employeePayrollList;
 	}
 	
@@ -98,9 +99,41 @@ public class EmployeePayrollServiceDB {
 								  .orElse(null);
 	}
 	
+	public List<EmployeePayrollData> viewEmployeeAndPayrollDetailsByName(String name) throws DBServiceException
+	{
+		List<EmployeePayrollData> empPayrollDetailsListByName = new ArrayList<>();
+		String query = "select * from Employee_Payroll , payroll_details , department where name = ?";
+		try(Connection con = JDBCConnection.getconnection()) {
+			PreparedStatement preparedStatement = con.prepareStatement(query);
+			preparedStatement.setString(1, name );
+			ResultSet resultSet = preparedStatement.executeQuery();
+			if(resultSet.next())
+			{
+				int id = resultSet.getInt(1);
+				String gender = resultSet.getString(3);
+				double salary = resultSet.getDouble(4);
+				LocalDate start = resultSet.getDate(5).toLocalDate();
+				int company_id = resultSet.getInt(6);
+				int emp_id = resultSet.getInt(7);
+				double basic_pay = resultSet.getDouble(8);
+				double deductions = resultSet.getDouble(9);
+				double taxable_pay = resultSet.getDouble(10);
+				double tax = resultSet.getDouble(11);
+				double net_pay = resultSet.getDouble(12);
+				int emp_id2 = resultSet.getInt(13);
+				String dept_name = resultSet.getString(14);
+				empDataObj = new EmployeePayrollData(id, name, gender ,salary,start,company_id,emp_id,basic_pay,deductions,taxable_pay,tax,net_pay,emp_id2,dept_name);
+				empPayrollDetailsListByName.add(empDataObj);
+			}
+		} catch (Exception e) {
+			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
+		}
+		return empPayrollDetailsListByName;
+	}
+	
 	public boolean isEmpPayrollSyncedWithDB(String name) throws DBServiceException {
 		try {
-			return viewEmployeePayrollByName(name).get(0).equals(getEmployeePayrollData(name));
+			return viewEmployeeAndPayrollDetailsByName(name).get(0).equals(getEmployeePayrollData(name));
 		} 
 		catch (IndexOutOfBoundsException e) {
 		} 
@@ -134,7 +167,7 @@ public class EmployeePayrollServiceDB {
 		}
 		return employeePayrollListByStartDate;
 	}
-
+	
 	public Map<String,Double> viewEmployeeDataGroupedByGender(String column , String operation) throws DBServiceException
 	{
 		Map<String,Double> empDataByGender = new HashMap<>();
@@ -151,20 +184,22 @@ public class EmployeePayrollServiceDB {
 		}
 		return empDataByGender;
 	}	
-
-	public List<EmployeePayrollData> insertNewEmployeeToDB(String name , String gender , double salary , LocalDate start_date) throws DBServiceException
+	
+	public List<EmployeePayrollData> insertNewEmployeeToDB(String name , String gender , 
+							double salary , LocalDate start_date ,int company_id, String department) throws DBServiceException
 	{
 		Connection con = null;
 		int empId= -1;
-		try {	
-			con =JDBCConnection.getconnection();
+		try {		
+
+			con = JDBCConnection.getconnection();
 			con.setAutoCommit(false);
 		}
 		catch (SQLException e) {
 			e.printStackTrace();
 		}
-		String query = String.format("insert into Employee_Payroll(name , gender, salary , start_date)" + 
-									"values ('%s','%s','%s','%s');",name,gender,salary,Date.valueOf(start_date));
+		String query = String.format("insert into Employee_Payroll(name , gender, salary , start_date,company_id)" + 
+									"values ('%s','%s','%s','%s','%s');",name,gender,salary,Date.valueOf(start_date),company_id);
 		try(Statement statement = con.createStatement()) {
 			
 			int rowAffected = statement.executeUpdate(query , statement.RETURN_GENERATED_KEYS);
@@ -173,7 +208,7 @@ public class EmployeePayrollServiceDB {
 			ResultSet resultSet = statement.getGeneratedKeys();
 			if(resultSet.next())
 				empId  = resultSet.getInt(1);
-			empDataObj = new EmployeePayrollData( name, gender ,salary,start_date);
+			empDataObj = new EmployeePayrollData( name, gender ,salary,start_date,company_id);
 			viewEmployeePayroll().add(empDataObj);
 			}
 		}catch (SQLException e) {
@@ -185,6 +220,22 @@ public class EmployeePayrollServiceDB {
 			e1.printStackTrace();
 		}
 	}
+		try (Statement statement = con.createStatement()) {
+			String query3 = String.format("insert into department(emp_id,dept_name)values('%s','%s');", empId, department);
+			int rowAffected = statement.executeUpdate(query3, Statement.RETURN_GENERATED_KEYS);
+			if (rowAffected == 1) {
+				ResultSet resultSet = statement.getGeneratedKeys();
+				if (resultSet.next())
+					empId = resultSet.getInt(1);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			try {
+				con.rollback();
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
 	try (Statement statement = con.createStatement()) {
 		double deductions = salary * 0.2;
 		double taxablePay = salary - deductions;
@@ -196,8 +247,8 @@ public class EmployeePayrollServiceDB {
 		if (rowAffected == 1) {
 			empDataObj = new EmployeePayrollData(empId, name, gender , salary, start_date);
 		}
-	} catch (SQLException e) {
-		e.printStackTrace();
+	} catch (SQLException e3) {
+		e3.printStackTrace();
 		try {
 			con.rollback();
 		}catch (SQLException e1) {
@@ -206,15 +257,15 @@ public class EmployeePayrollServiceDB {
 	}
 	try {
 		con.commit();
-	}catch(SQLException e) {
-		e.printStackTrace();
+	}catch(SQLException e4) {
+		e4.printStackTrace();
 		}finally {
 			if(con!=null)
 				try {
 					con.close();
-				}catch(SQLException e) {
-					e.printStackTrace();}
+				}catch(SQLException e5) {
+					e5.printStackTrace();}
 		}
-	return viewEmployeePayroll();
+		return viewEmployeePayroll();
 	}
 }
