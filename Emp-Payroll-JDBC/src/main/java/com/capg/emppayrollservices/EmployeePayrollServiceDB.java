@@ -63,7 +63,7 @@ public class EmployeePayrollServiceDB {
 
 	}
 
-	public void updateEmployeeSalary(String name, double salary) throws DBServiceException {
+	public void updateEmployeeSalaryUsingStatement(String name, double salary) throws DBServiceException {
 
 		String query = String.format("UPDATE payroll_service SET salary = '%.2f' where name = '%s';", salary, name);
 
@@ -71,24 +71,37 @@ public class EmployeePayrollServiceDB {
 			Statement st = con.createStatement();
 			int rs = st.executeUpdate(query);
 			empDataObj = getEmployeePayrollData(name);
-			if(rs > 0 && empDataObj != null)
+			if (rs > 0 && empDataObj != null)
 				empDataObj.setSalary(salary);
-		}catch (Exception e) {
+		} catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
 	}
 
-	private EmployeePayrollData getEmployeePayrollData(String name) {
-		
-		return empPayrollList.stream().filter(e -> e.getName().equals(name)).findFirst().orElse(null);
+	public void updateEmployeeSalaryUsingPreparedStatement(String name, double salary) throws DBServiceException {
+		String query = "update Employee_Payroll set salary = ? where name = ?";
+		try (Connection con = new JDBCConnection().getconnection()) {
+			PreparedStatement preparedStatement = con.prepareStatement(query);
+			preparedStatement.setDouble(1, salary);
+			preparedStatement.setString(2, name);
+			int result = preparedStatement.executeUpdate();
+			empDataObj = getEmployeePayrollData(name);
+			if (result > 0 && empDataObj != null)
+				empDataObj.setSalary(salary);
+		} catch (Exception e) {
+			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
+		}
 	}
+
+	public EmployeePayrollData getEmployeePayrollData(String name) throws DBServiceException {
+		return viewEmployeePayroll().stream().filter(e -> e.getName().equals(name)).findFirst().orElse(null);
+	}
+
 	public boolean isEmpPayrollSyncedWithDB(String name) throws DBServiceException {
 		try {
 			return viewEmployeePayrollByName(name).get(0).equals(getEmployeePayrollData(name));
-		} 
-		catch (IndexOutOfBoundsException e) {
-		} 
-		catch (Exception e) {
+		} catch (IndexOutOfBoundsException e) {
+		} catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
 		return false;
