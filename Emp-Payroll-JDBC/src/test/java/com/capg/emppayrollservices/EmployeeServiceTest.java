@@ -84,5 +84,12 @@ public class EmployeeServiceTest {
 		assertEquals(2, empDataByGender.get("M"), 0.0);
 		assertEquals(1, empDataByGender.get("F"), 0.0);
 	}
+	
+	@Test
+	public void insertedNewEmployee_WhenRetrieved_ShouldBeSyncedWithDB() throws DBServiceException{
+		DataBaseObj.insertNewEmployeeToDB("Mark" , "M", 5000000.0 , LocalDate.now());
+		boolean isSynced = DataBaseObj.isEmpPayrollSyncedWithDB("Mark");
+		assertTrue(isSynced);
+	}
 
 }

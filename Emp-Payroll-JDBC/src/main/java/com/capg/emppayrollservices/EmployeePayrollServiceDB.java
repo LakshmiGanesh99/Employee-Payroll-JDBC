@@ -18,7 +18,7 @@ public class EmployeePayrollServiceDB {
 	{
 		List<EmployeePayrollData> employeePayrollList = new ArrayList<>();
 		String query = "select * from Employee_Payroll";
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			Statement statement = con.createStatement();
 			ResultSet resultSet = statement.executeQuery(query);
 			while(resultSet.next())
@@ -42,7 +42,7 @@ public class EmployeePayrollServiceDB {
 	{
 		List<EmployeePayrollData> employeePayrollListByName = new ArrayList<>();
 		String query = "select * from Employee_Payroll where name = ?";
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			PreparedStatement preparedStatement = con.prepareStatement(query);
 			preparedStatement.setString(1, name );
 			ResultSet resultSet = preparedStatement.executeQuery();
@@ -64,7 +64,7 @@ public class EmployeePayrollServiceDB {
 	public void updateEmployeeSalaryUsingStatement(String name , double salary) throws DBServiceException
 	{
 		String query = String.format("update Employee_Payroll set salary = %.2f where name = '%s';", salary , name);
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			Statement statement = con.createStatement();
 			int result = statement.executeUpdate(query);
 			empDataObj = getEmployeePayrollData( name);
@@ -78,7 +78,7 @@ public class EmployeePayrollServiceDB {
 	public void updateEmployeeSalaryUsingPreparedStatement(String name , double salary) throws DBServiceException
 	{
 		String query = "update Employee_Payroll set salary = ? where name = ?";
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			PreparedStatement preparedStatement = con.prepareStatement(query);
 			preparedStatement.setDouble(1, salary);
 			preparedStatement.setString(2, name);
@@ -114,7 +114,7 @@ public class EmployeePayrollServiceDB {
 	{
 		List<EmployeePayrollData> employeePayrollListByStartDate = new ArrayList<>();
 		String query = "select * from Employee_Payroll where start_date between ? and  ?";
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			PreparedStatement preparedStatement = con.prepareStatement(query);
 			preparedStatement.setDate(1, Date.valueOf(startDate));
 			preparedStatement.setDate(2, Date.valueOf(endDate));
@@ -139,7 +139,7 @@ public class EmployeePayrollServiceDB {
 	{
 		Map<String,Double> empDataByGender = new HashMap<>();
 		String query = String.format("select gender , %s(%s) from Employee_Payroll group by gender;" , operation , column);
-		try(Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = JDBCConnection.getconnection()) {
 			PreparedStatement preparedStatement = con.prepareStatement(query);
 			ResultSet resultSet = preparedStatement.executeQuery();
 			while(resultSet.next())
@@ -151,4 +151,21 @@ public class EmployeePayrollServiceDB {
 		}
 		return empDataByGender;
 	}	
+	
+	public void insertNewEmployeeToDB(String name , String gender , double salary , LocalDate start_date) throws DBServiceException
+	{
+		String query = "insert into Employee_Payroll ( name , gender, salary , start_date) values (?,?,?,?)";
+		try(Connection con = JDBCConnection.getconnection()) {
+			PreparedStatement preparedStatement = con.prepareStatement(query);
+			preparedStatement.setString(1, name);
+			preparedStatement.setString(2, gender);
+			preparedStatement.setDouble(3, salary);
+			preparedStatement.setDate(4, Date.valueOf(start_date));
+			preparedStatement.executeUpdate();
+			empDataObj = new EmployeePayrollData( name, gender ,salary,start_date);
+			viewEmployeePayroll().add(empDataObj);	
+		}catch (Exception e) {
+			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
+		}
+	}
 }

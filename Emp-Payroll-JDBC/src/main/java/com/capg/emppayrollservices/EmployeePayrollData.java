@@ -3,26 +3,31 @@ package com.capg.emppayrollservices;
 import java.time.LocalDate;
 
 public class EmployeePayrollData {
-
-	private int id;
+	private int emp_id;
 	private String name;
-	private double salary;
-	private LocalDate start;
 	private String gender;
+	private double salary;
+	private LocalDate start_date;
 
-	public EmployeePayrollData(int id, String name, String gender, double salary, LocalDate start) {
-		this.id = id;
+	public EmployeePayrollData(int emp_id, String name, String gender, double salary, LocalDate start) {
+		this(name, gender, salary, start);
+		this.emp_id = emp_id;
+	}
+
+	public EmployeePayrollData(String name, String gender, double salary, LocalDate start_date) {
+		super();
 		this.name = name;
+		this.gender = gender;
 		this.salary = salary;
-		this.start = start;
+		this.start_date = start_date;
 	}
 
-	public int getId() {
-		return id;
+	public int getEmp_id() {
+		return emp_id;
 	}
 
-	public void setId(int id) {
-		this.id = id;
+	public void setEmp_id(int emp_id) {
+		this.emp_id = emp_id;
 	}
 
 	public String getName() {
@@ -32,6 +37,7 @@ public class EmployeePayrollData {
 	public void setName(String name) {
 		this.name = name;
 	}
+
 	public String getGender() {
 		return gender;
 	}
@@ -39,6 +45,7 @@ public class EmployeePayrollData {
 	public void setGender(String gender) {
 		this.gender = gender;
 	}
+
 	public double getSalary() {
 		return salary;
 	}
@@ -47,21 +54,20 @@ public class EmployeePayrollData {
 		this.salary = salary;
 	}
 
-	public LocalDate getStart() {
-		return start;
+	public LocalDate getStart_date() {
+		return start_date;
 	}
 
-	public void setStart(LocalDate start) {
-		this.start = start;
+	public void setStart_date(LocalDate start_date) {
+		this.start_date = start_date;
 	}
-	
 
 	@Override
 	public String toString() {
-		return "EmployeePayrollData [id=" + id + ", name=" + name + ", salary=" + salary + ", start=" + start + "]";
+		return "EmployeePayrollData [emp_id=" + emp_id + ", name=" + name + ", gender=" + gender + ", salary=" + salary
+				+ ", start_date=" + start_date + "]";
 	}
-	
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj)
@@ -71,7 +77,7 @@ public class EmployeePayrollData {
 		if (getClass() != obj.getClass())
 			return false;
 		EmployeePayrollData other = (EmployeePayrollData) obj;
-		if (id != other.id)
+		if (emp_id != other.emp_id)
 			return false;
 		if (gender == null) {
 			if (other.gender != null)
@@ -85,12 +91,12 @@ public class EmployeePayrollData {
 			return false;
 		if (Double.doubleToLongBits(salary) != Double.doubleToLongBits(other.salary))
 			return false;
-		if (start == null) {
-			if (other.start != null)
+		if (start_date == null) {
+			if (other.start_date != null)
 				return false;
-		} else if (!start.equals(other.start))
+		} else if (!start_date.equals(other.start_date))
 			return false;
 		return true;
 	}
-}
 
+}
