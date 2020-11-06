@@ -6,104 +6,130 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.sql.Statement;
 import java.util.List;
+import java.sql.Date;
+
 
 public class EmployeePayrollServiceDB {
-
 	EmployeePayrollData empDataObj = null;
-	List<EmployeePayrollData> empPayrollList;
-
-	public List<EmployeePayrollData> viewEmployeePayroll() throws DBServiceException {
-
-		List<EmployeePayrollData> empPayrollList = new ArrayList();
-
-		String query = "SELECT * FROM payroll_service";
-		try (Connection con = JDBCConnection.getconnection()) {
-			Statement st = con.createStatement();
-			ResultSet rs = st.executeQuery(query);
-			rs.next();
-			int id = rs.getInt(1);
-			String name = rs.getString(2);
-			String gender = rs.getString(3);
-			double salary = rs.getDouble(4);
-			LocalDate start = rs.getDate(5).toLocalDate();
-			empDataObj = new EmployeePayrollData(id, name, gender, salary, start);
-			empPayrollList.add(empDataObj);
-
-		} catch (Exception e) {
-			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
-		}
-		return empPayrollList;
-	}
-
-	public List<EmployeePayrollData> viewEmployeePayrollByName(String name) throws DBServiceException {
-
-		List<EmployeePayrollData> empPayrollListByName = new ArrayList();
-
-		String query = String.format("SELECT * FROM payroll_service where name = '%s';", name);
-
-		try (Connection con = JDBCConnection.getconnection()) {
-			Statement st = con.createStatement();
-			ResultSet rs = st.executeQuery(query);
-
-			if (rs.next()) {
-
-				int id = rs.getInt(1);
-				String gender = rs.getString(3);
-				double salary = rs.getDouble(4);
-				LocalDate start = rs.getDate(5).toLocalDate();
-				empDataObj = new EmployeePayrollData(id, name, gender, salary, start);
-				empPayrollListByName.add(empDataObj);
-
+	
+	public List<EmployeePayrollData> viewEmployeePayroll() throws DBServiceException
+	{
+		List<EmployeePayrollData> employeePayrollList = new ArrayList<>();
+		String query = "select * from Employee_Payroll";
+		try(Connection con = new JDBCConnection().getconnection()) {
+			Statement statement = con.createStatement();
+			ResultSet resultSet = statement.executeQuery(query);
+			while(resultSet.next())
+			{
+				int id = resultSet.getInt(1);
+				String name = resultSet.getString(2);
+				String gender = resultSet.getString(3);
+				double salary = resultSet.getDouble(4);
+				LocalDate start = resultSet.getDate(5).toLocalDate();
+				empDataObj = new EmployeePayrollData(id, name, gender ,salary,start);
+				employeePayrollList.add(empDataObj);	
+				
 			}
-
 		} catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
-		return empPayrollListByName;
-
+		return employeePayrollList;
 	}
-
-	public void updateEmployeeSalaryUsingStatement(String name, double salary) throws DBServiceException {
-
-		String query = String.format("UPDATE payroll_service SET salary = '%.2f' where name = '%s';", salary, name);
-
-		try (Connection con = JDBCConnection.getconnection()) {
-			Statement st = con.createStatement();
-			int rs = st.executeUpdate(query);
-			empDataObj = getEmployeePayrollData(name);
-			if (rs > 0 && empDataObj != null)
+	
+	public List<EmployeePayrollData> viewEmployeePayrollByName(String name) throws DBServiceException
+	{
+		List<EmployeePayrollData> employeePayrollListByName = new ArrayList<>();
+		String query = "select * from Employee_Payroll where name = ?";
+		try(Connection con = new JDBCConnection().getconnection()) {
+			PreparedStatement preparedStatement = con.prepareStatement(query);
+			preparedStatement.setString(1, name );
+			ResultSet resultSet = preparedStatement.executeQuery();
+			if(resultSet.next())
+			{
+				int id = resultSet.getInt(1);
+				String gender = resultSet.getString(3);
+				double salary = resultSet.getDouble(4);
+				LocalDate start = resultSet.getDate(5).toLocalDate();
+				empDataObj = new EmployeePayrollData(id, name, gender ,salary,start);
+				employeePayrollListByName.add(empDataObj);
+			}
+		} catch (Exception e) {
+			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
+		}
+		return employeePayrollListByName;
+	}
+	
+	public void updateEmployeeSalaryUsingStatement(String name , double salary) throws DBServiceException
+	{
+		String query = String.format("update Employee_Payroll set salary = %.2f where name = '%s';", salary , name);
+		try(Connection con = new JDBCConnection().getconnection()) {
+			Statement statement = con.createStatement();
+			int result = statement.executeUpdate(query);
+			empDataObj = getEmployeePayrollData( name);
+			if(result > 0 && empDataObj != null)
 				empDataObj.setSalary(salary);
-		} catch (Exception e) {
+		}catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
 	}
-
-	public void updateEmployeeSalaryUsingPreparedStatement(String name, double salary) throws DBServiceException {
+	
+	public void updateEmployeeSalaryUsingPreparedStatement(String name , double salary) throws DBServiceException
+	{
 		String query = "update Employee_Payroll set salary = ? where name = ?";
-		try (Connection con = new JDBCConnection().getconnection()) {
+		try(Connection con = new JDBCConnection().getconnection()) {
 			PreparedStatement preparedStatement = con.prepareStatement(query);
 			preparedStatement.setDouble(1, salary);
 			preparedStatement.setString(2, name);
 			int result = preparedStatement.executeUpdate();
-			empDataObj = getEmployeePayrollData(name);
-			if (result > 0 && empDataObj != null)
+			empDataObj = getEmployeePayrollData( name);
+			if(result > 0 && empDataObj != null)
 				empDataObj.setSalary(salary);
-		} catch (Exception e) {
+		}catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
-	}
-
+	}	
 	public EmployeePayrollData getEmployeePayrollData(String name) throws DBServiceException {
-		return viewEmployeePayroll().stream().filter(e -> e.getName().equals(name)).findFirst().orElse(null);
+		return viewEmployeePayroll().stream()
+								  .filter(e -> e.getName()
+								  .equals(name))
+								  .findFirst()
+								  .orElse(null);
 	}
-
+	
 	public boolean isEmpPayrollSyncedWithDB(String name) throws DBServiceException {
 		try {
 			return viewEmployeePayrollByName(name).get(0).equals(getEmployeePayrollData(name));
-		} catch (IndexOutOfBoundsException e) {
-		} catch (Exception e) {
+		} 
+		catch (IndexOutOfBoundsException e) {
+		} 
+		catch (Exception e) {
 			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
 		}
 		return false;
+	}
+	
+	public List<EmployeePayrollData> viewEmployeePayrollByJoinDateRange(LocalDate startDate , LocalDate endDate) throws DBServiceException
+	{
+		List<EmployeePayrollData> employeePayrollListByStartDate = new ArrayList<>();
+		String query = "select * from Employee_Payroll where start_date between ? and  ?";
+		try(Connection con = new JDBCConnection().getconnection()) {
+			PreparedStatement preparedStatement = con.prepareStatement(query);
+			preparedStatement.setDate(1, Date.valueOf(startDate));
+			preparedStatement.setDate(2, Date.valueOf(endDate));
+			ResultSet resultSet = preparedStatement.executeQuery();
+			while(resultSet.next())
+			{
+				int id = resultSet.getInt(1);
+				String name = resultSet.getString(2);
+				String gender = resultSet.getString(3);
+				double salary = resultSet.getDouble(4);
+				LocalDate start = resultSet.getDate(5).toLocalDate();
+				empDataObj = new EmployeePayrollData(id, name, gender ,salary,start);
+				employeePayrollListByStartDate.add(empDataObj);
+			}
+		} catch (Exception e) {
+			throw new DBServiceException("SQL Exception", DBServiceExceptionType.SQL_EXCEPTION);
+		}
+		return employeePayrollListByStartDate;
 	}
 }

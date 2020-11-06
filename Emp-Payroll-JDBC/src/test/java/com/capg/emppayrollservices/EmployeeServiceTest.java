@@ -3,6 +3,7 @@ package com.capg.emppayrollservices;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.BeforeClass;
@@ -34,6 +35,12 @@ public class EmployeeServiceTest {
 		DataBaseObj.updateEmployeeSalaryUsingPreparedStatement("Terisa", 3000000.0);
 		boolean isSynced = DataBaseObj.isEmpPayrollSyncedWithDB("Terisa");
 		assertTrue(isSynced);
+	}
+	
+	@Test
+	public void givenDateRange_WhenRetrieved_ShouldMatchEmpCount() throws DBServiceException{
+		List<EmployeePayrollData> empPayrollList = DataBaseObj.viewEmployeePayrollByJoinDateRange(LocalDate.of(2018,02,01), LocalDate.now() );
+		assertEquals(2, empPayrollList.size());
 	}
 
 }
