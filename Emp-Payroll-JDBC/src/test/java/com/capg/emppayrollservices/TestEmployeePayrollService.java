@@ -87,15 +87,23 @@ public class TestEmployeePayrollService {
 	@Ignore
 	@Test
 	public void insertedNewEmployee_WhenRetrieved_ShouldBeSyncedWithDB() throws DBServiceException{
-		serviceObj.insertNewEmployeeToDB("Mark" , "M", 5000000.0 , LocalDate.now());
+		serviceObj.insertNewEmployeeToDB("Mark" , "M", 5000000.0 , LocalDate.now() , 1 , "Sales");
+		serviceObj.viewEmployeeAndPayrollDetailsByName("Mark");
 		boolean isSynced = serviceObj.isEmpPayrollSyncedWithDB("Mark");
 		assertTrue(isSynced);
 	}
-	
+	@Ignore
 	@Test
 	public void addedNewEmployee_WhenRetrieved_ShouldReturnPayrollDetailsAndBeSyncedWithDB() throws DBServiceException{
 		serviceObj.viewEmployeeAndPayrollDetailsByName("Mark");
 		boolean isSynced = serviceObj.isEmpPayrollSyncedWithDB("Mark");
 		assertTrue(isSynced);
+	}
+	
+	@Test
+	public void givenEmployeeId_WhenDeletedUsing_ShouldSyncWithDB() throws DBServiceException {
+		serviceObj.removeEmployeeFromDB(2);
+		assertEquals(2,empPayrollList.size());
+		
 	}
 }
